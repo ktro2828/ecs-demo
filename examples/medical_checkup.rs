@@ -1,3 +1,5 @@
+use std::time;
+
 use ecs_demo::{
     app::{App, Schedule},
     world::World,
@@ -120,6 +122,8 @@ fn display_system(world: &mut World) {
 fn main() {
     println!("Let's start the ECS demo with medical checkup!");
 
+    let start = time::Instant::now();
+
     App::new()
         .add_system(Schedule::Startup, setup)
         .add_system(Schedule::Update, bmi_system)
@@ -127,4 +131,6 @@ fn main() {
         .add_system(Schedule::Update, gain_weight_system)
         .add_system(Schedule::Update, display_system)
         .run(5);
+
+    println!(">> Time elapsed: {:?}", start.elapsed());
 }
