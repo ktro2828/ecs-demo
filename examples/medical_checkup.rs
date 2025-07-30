@@ -6,32 +6,39 @@ use ecs_demo::{
 };
 
 // === Components ===
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Age(u32);
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Height(f32);
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Weight(f32);
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct BMI(f32);
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct BloodPressure {
     systolic: u32,
     diastolic: u32,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct HyperTensionRisk(HyperTensionRiskLevel);
 
-#[derive(Debug)]
+impl Default for HyperTensionRisk {
+    fn default() -> Self {
+        Self(HyperTensionRiskLevel::Unknown)
+    }
+}
+
+#[derive(Debug, Clone)]
 enum HyperTensionRiskLevel {
     Low,
     Moderate,
     High,
+    Unknown,
 }
 
 // === Systems ===
@@ -39,69 +46,80 @@ enum HyperTensionRiskLevel {
 fn setup(world: &mut World) {
     // add entity1
     {
-        let e = world.spawn();
-        world.insert(e, Age(30));
-        world.insert(e, Height(170.0));
-        world.insert(e, Weight(70.0));
-        world.insert(e, BMI(22.0));
-        world.insert(
-            e,
+        let e = world.spawn((
+            Age(30),
+            Height(170.0),
+            Weight(70.0),
+            BMI(22.0),
             BloodPressure {
                 systolic: 120,
                 diastolic: 80,
             },
-        );
+            HyperTensionRisk::default(),
+        ));
     }
 
     // add entity2
     {
-        let e = world.spawn();
-        world.insert(e, Age(45));
-        world.insert(e, Height(180.0));
-        world.insert(e, Weight(90.0));
-        world.insert(e, BMI(27.0));
-        world.insert(
-            e,
+        let e = world.spawn((
+            Age(45),
+            Height(180.0),
+            Weight(90.0),
+            BMI(27.0),
             BloodPressure {
                 systolic: 130,
                 diastolic: 90,
             },
-        );
+            HyperTensionRisk::default(),
+        ));
     }
 }
 
 // === update systems ===
 fn bmi_system(world: &mut World) {
-    for id in world.entities() {
-        if let (Some(height), Some(weight)) = (world.get::<Height>(id), world.get::<Weight>(id)) {
-            let h_m = height.0 / 100.0;
-            let bmi = weight.0 / (h_m * h_m);
-            world.insert(id, BMI(bmi));
+    for archetype in world.archetypes.values_mut() {
+        let heights = archetype.get::<Height>().map(|v| v.clone());
+        let weights = archetype.get::<Weight>().map(|v| v.clone());
+
+        if let (Some(heights), Some(weights)) = (heights, weights) {
+            if let Some(bmis) = archetype.get_mut::<BMI>() {
+                for ((h, w), bmi) in heights.iter().zip(weights.iter()).zip(bmis.iter_mut()) {
+                    let h_m = h.0 / 100.0;
+                    bmi.0 = w.0 / (h_m * h_m);
+                }
+            }
         }
     }
 }
 
 fn hypertension_risk_system(world: &mut World) {
-    for id in world.entities() {
-        if let (Some(bp), Some(age)) = (world.get::<BloodPressure>(id), world.get::<Age>(id)) {
-            let risk = if bp.systolic >= 140 || bp.diastolic >= 90 {
-                if age.0 >= 60 {
-                    HyperTensionRiskLevel::High
-                } else {
-                    HyperTensionRiskLevel::Moderate
+    for archetype in world.archetypes.values_mut() {
+        let bps = archetype.get::<BloodPressure>().map(|v| v.clone());
+        let ages = archetype.get::<Age>().map(|v| v.clone());
+        if let (Some(bps), Some(ages)) = (bps, ages) {
+            if let Some(risks) = archetype.get_mut::<HyperTensionRisk>() {
+                for ((bp, age), risk) in bps.iter().zip(ages.iter()).zip(risks.iter_mut()) {
+                    risk.0 = if bp.systolic >= 140 || bp.diastolic >= 90 {
+                        if age.0 >= 60 {
+                            HyperTensionRiskLevel::High
+                        } else {
+                            HyperTensionRiskLevel::Moderate
+                        }
+                    } else {
+                        HyperTensionRiskLevel::Low
+                    };
                 }
-            } else {
-                HyperTensionRiskLevel::Low
-            };
-            world.insert(id, HyperTensionRisk(risk));
+            }
         }
     }
 }
 
 fn gain_weight_system(world: &mut World) {
-    for id in world.entities() {
-        if let Some(weight) = world.get_mut::<Weight>(id) {
-            weight.0 += 1.0;
+    for archetype in world.archetypes.values_mut() {
+        if let Some(weights) = archetype.get_mut::<Weight>() {
+            for weight in weights.iter_mut() {
+                weight.0 += 1.0;
+            }
         }
     }
 }
@@ -110,10 +128,10 @@ fn display_system(world: &mut World) {
     println!("=== Displaying result ===");
     for id in world.entities() {
         println!("Entity ID: {}", id);
-        if let Some(bmi) = world.get::<BMI>(id) {
+        if let Some(bmi) = world.get_component::<BMI>(id) {
             println!("BMI: {}", bmi.0);
         }
-        if let Some(risk) = world.get::<HyperTensionRisk>(id) {
+        if let Some(risk) = world.get_component::<HyperTensionRisk>(id) {
             println!("Hypertension Risk: {:?}", risk.0);
         }
     }
