@@ -126,10 +126,10 @@ fn main() {
 
     App::new()
         .add_system(Schedule::Startup, setup)
+        .add_system(Schedule::PreUpdate, gain_weight_system)
         .add_system(Schedule::Update, bmi_system)
         .add_system(Schedule::Update, hypertension_risk_system)
-        .add_system(Schedule::Update, gain_weight_system)
-        .add_system(Schedule::Update, display_system)
+        .add_system(Schedule::PostUpdate, display_system)
         .run(5);
 
     println!(">> Time elapsed: {:?}", start.elapsed());
