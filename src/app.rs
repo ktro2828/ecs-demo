@@ -38,32 +38,32 @@ impl App {
     pub fn run(&mut self, n_loop: u32) {
         // call startup systems first
         if let Some(startup_systems) = self.systems.get(&Schedule::Startup) {
-            for system in startup_systems {
-                system(&mut self.world)
-            }
+            startup_systems
+                .iter()
+                .for_each(|system| system(&mut self.world));
         }
 
         // NOTE: in game engine, event loop is infinite
         for _ in 0..n_loop {
             // call pre-update systems
             if let Some(pre_systems) = self.systems.get(&Schedule::PreUpdate) {
-                for system in pre_systems {
-                    system(&mut self.world)
-                }
+                pre_systems
+                    .iter()
+                    .for_each(|system| system(&mut self.world));
             }
 
             // call update systems
             if let Some(update_systems) = self.systems.get(&Schedule::Update) {
-                for system in update_systems {
-                    system(&mut self.world)
-                }
+                update_systems
+                    .iter()
+                    .for_each(|system| system(&mut self.world));
             }
 
             // call post-update systems
             if let Some(post_systems) = self.systems.get(&Schedule::PostUpdate) {
-                for system in post_systems {
-                    system(&mut self.world)
-                }
+                post_systems
+                    .iter()
+                    .for_each(|system| system(&mut self.world));
             }
         }
     }

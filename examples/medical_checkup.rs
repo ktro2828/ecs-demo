@@ -46,7 +46,7 @@ enum HyperTensionRiskLevel {
 fn setup(world: &mut World) {
     // add entity1
     {
-        let e = world.spawn((
+        let _ = world.spawn((
             Age(30),
             Height(170.0),
             Weight(70.0),
@@ -61,7 +61,7 @@ fn setup(world: &mut World) {
 
     // add entity2
     {
-        let e = world.spawn((
+        let _ = world.spawn((
             Age(45),
             Height(180.0),
             Weight(90.0),
